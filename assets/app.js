@@ -2938,61 +2938,257 @@ function toggleCountryShowAll() { state.countryShowAll = !state.countryShowAll; 
 /* ============================================================
    VIEW: RECORDS
    ============================================================ */
+/* État local pour les records dépliés */
+let expandedRecords = new Set();
+
 function renderRecords() {
   setPageTitle("page.records");
   state.currentView = "records";
 
-  const stats = {};
-  Object.keys(DB.players).forEach(name => {
-    const rs = getResultsForPlayer(name);
-    if (!rs.length) return;
-    stats[name] = {
-      wins: rs.filter(r => r.position === 1).length,
-      podiums: rs.filter(r => r.position <= 3).length,
-      top10: rs.filter(r => r.position <= 10).length,
-      played: rs.length,
-      avgPos: avg(rs.map(r => r.position)),
+  // ---- Précalculs ----
+  const allResults = DB.results;
+
+  const playerStats = {};
+  allResults.forEach(r => {
+    const p = r.playerName;
+    if (!playerStats[p]) playerStats[p] = { positions: [], wins: 0, podiums: 0, top10: 0 };
+    playerStats[p].positions.push(r.position);
+    if (r.position === 1) playerStats[p].wins++;
+    if (r.position <= 3) playerStats[p].podiums++;
+    if (r.position <= 10) playerStats[p].top10++;
+  });
+
+  const resultsByPlayer = {};
+  allResults.forEach(r => {
+    const c = getChallengeById(r.challengeId);
+    if (!c) return;
+    if (!resultsByPlayer[r.playerName]) resultsByPlayer[r.playerName] = [];
+    resultsByPlayer[r.playerName].push({ ...r, date: c.date });
+  });
+  Object.values(resultsByPlayer).forEach(arr => {
+    arr.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  });
+
+  const enriched = {};
+  Object.entries(playerStats).forEach(([name, s]) => {
+    const plays = s.positions.length;
+    if (plays === 0) return;
+    const avgPos = avg(s.positions);
+    const mean = avgPos;
+    const variance = avg(s.positions.map(p => Math.pow(p - mean, 2)));
+    const stdDev = Math.sqrt(variance);
+    const wins = s.wins;
+    const podiums = s.podiums;
+    const top10 = s.top10;
+    const winrate = wins / plays;
+    const podiumRate = podiums / plays;
+
+    const seasonsSet = new Set();
+    for (const [season, data] of Object.entries(DB.standings)) {
+      for (const div of data.divisions || []) {
+        if ((div.standings || []).some(x => x.playerName === name && !x.unranked)) {
+          seasonsSet.add(season);
+        }
+      }
+    }
+
+    const results = resultsByPlayer[name] || [];
+    let maxTop10Streak = 0, maxPodiumStreak = 0, maxWinStreak = 0;
+    let curTop10 = 0, curPodium = 0, curWin = 0;
+    results.forEach(r => {
+      if (r.position <= 10) { curTop10++; maxTop10Streak = Math.max(maxTop10Streak, curTop10); }
+      else curTop10 = 0;
+
+      if (r.position <= 3) { curPodium++; maxPodiumStreak = Math.max(maxPodiumStreak, curPodium); }
+      else curPodium = 0;
+
+      if (r.position === 1) { curWin++; maxWinStreak = Math.max(maxWinStreak, curWin); }
+      else curWin = 0;
+    });
+
+    enriched[name] = {
+      name, plays, wins, podiums, top10, avgPos, stdDev, winrate, podiumRate,
+      seasons: seasonsSet.size,
+      maxTop10Streak, maxPodiumStreak, maxWinStreak,
     };
   });
 
-  const records = [
-    { label: "🏆 " + t("wins"), key: "wins" },
-    { label: "🥇 " + t("podiums"), key: "podiums" },
-    { label: "🎯 " + t("top10"), key: "top10" },
-    { label: "📊 " + t("challengesCount"), key: "played" },
-  ];
+  const enrichedList = Object.values(enriched);
 
-  let html = "";
-  records.forEach(rec => {
-    const entries = Object.entries(stats).sort((a, b) => b[1][rec.key] - a[1][rec.key]);
-    if (!entries.length) return;
-    const [name, s] = entries[0];
-    const info = getPlayerInfo(name);
-    html += `<div class="card" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-left:4px solid var(--accent);"
-              onclick="navigateToPlayer('${esc(name).replace(/'/g, "\\'")}')">
-      <div>
-        <div class="muted" style="font-size:11px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700;">${rec.label}</div>
-        <div style="font-weight:700; font-size:15px; margin-top:6px;"><span class="flag">${countryFlag(info.country)}</span> ${esc(name)}</div>
-      </div>
-      <div style="font-size:26px; font-weight:800; color:var(--accent);">${s[rec.key]}</div>
-    </div>`;
-  });
-
-  const eligible = Object.entries(stats).filter(([, s]) => s.played >= 5).sort((a, b) => a[1].avgPos - b[1].avgPos);
-  if (eligible.length) {
-    const [name, s] = eligible[0];
-    const info = getPlayerInfo(name);
-    html += `<div class="card" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-left:4px solid var(--accent);"
-              onclick="navigateToPlayer('${esc(name).replace(/'/g, "\\'")}')">
-      <div>
-        <div class="muted" style="font-size:11px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700;">📈 ${t("avgPos")} (min. 5)</div>
-        <div style="font-weight:700; font-size:15px; margin-top:6px;"><span class="flag">${countryFlag(info.country)}</span> ${esc(name)}</div>
-      </div>
-      <div style="font-size:26px; font-weight:800; color:var(--accent);">#${s.avgPos.toFixed(1)}</div>
-    </div>`;
+  // ---- Helpers pour extraire le "top" ----
+  // Renvoie { value, players: [name1, name2, ...] } pour le maximum
+  function maxBy(key, filterFn) {
+    const eligible = enrichedList.filter(filterFn || (() => true));
+    if (!eligible.length) return null;
+    const maxVal = Math.max(...eligible.map(p => p[key]));
+    const players = eligible
+      .filter(p => p[key] === maxVal)
+      .map(p => p.name)
+      .sort((a, b) => a.localeCompare(b));
+    return { value: maxVal, players };
   }
 
+  // Pour la position moyenne : on veut le MINIMUM (meilleure = plus petit)
+  function minBy(key, filterFn) {
+    const eligible = enrichedList.filter(filterFn || (() => true));
+    if (!eligible.length) return null;
+    const minVal = Math.min(...eligible.map(p => p[key]));
+    const players = eligible
+      .filter(p => p[key] === minVal)
+      .map(p => p.name)
+      .sort((a, b) => a.localeCompare(b));
+    return { value: minVal, players };
+  }
+
+  // ---- Construction des records ----
+  const records = [];
+
+  // 1. Most wins
+  {
+    const r = maxBy("wins");
+    if (r) records.push({ id: "wins", label: "🏆 Most wins", value: r.value, players: r.players });
+  }
+  // 2. Most podiums
+  {
+    const r = maxBy("podiums");
+    if (r) records.push({ id: "podiums", label: "🥇 Most podiums", value: r.value, players: r.players });
+  }
+  // 3. Most Top 10
+  {
+    const r = maxBy("top10");
+    if (r) records.push({ id: "top10", label: "🎯 Most Top 10", value: r.value, players: r.players });
+  }
+  // 4. Most challenges
+  {
+    const r = maxBy("plays");
+    if (r) records.push({ id: "plays", label: "📊 Most challenges played", value: r.value, players: r.players });
+  }
+  // 5-8. Best average (5+, 20+, 50+, 100+)
+  [5, 20, 50, 100].forEach(min => {
+    const r = minBy("avgPos", p => p.plays >= min);
+    if (r) records.push({
+      id: "avg" + min,
+      label: `📈 Best average position (${min}+ challenges)`,
+      value: `#${r.value.toFixed(2)}`,
+      players: r.players,
+    });
+  });
+  // 9. Best winrate (20+)
+  {
+    const r = maxBy("winrate", p => p.plays >= 20);
+    if (r) records.push({
+      id: "winrate",
+      label: "🥇 Best win rate (20+ challenges)",
+      value: `${(r.value * 100).toFixed(1)}%`,
+      players: r.players,
+    });
+  }
+  // 10. Best podium ratio (20+)
+  {
+    const r = maxBy("podiumRate", p => p.plays >= 20);
+    if (r) records.push({
+      id: "podiumRate",
+      label: "🎯 Best podium ratio (20+ challenges)",
+      value: `${(r.value * 100).toFixed(1)}%`,
+      players: r.players,
+    });
+  }
+  // 11. Longest Top 10 streak
+  {
+    const r = maxBy("maxTop10Streak", p => p.maxTop10Streak >= 3);
+    if (r) records.push({ id: "top10Streak", label: "🔥 Longest Top 10 streak", value: r.value, players: r.players });
+  }
+  // 12. Longest podium streak
+  {
+    const r = maxBy("maxPodiumStreak", p => p.maxPodiumStreak >= 2);
+    if (r) records.push({ id: "podiumStreak", label: "🔥 Longest podium streak", value: r.value, players: r.players });
+  }
+  // 13. Longest win streak
+  {
+    const r = maxBy("maxWinStreak", p => p.maxWinStreak >= 2);
+    if (r) records.push({ id: "winStreak", label: "👑 Longest win streak", value: r.value, players: r.players });
+  }
+  // 14. Most seasons played
+  {
+    const r = maxBy("seasons", p => p.seasons >= 3);
+    if (r) records.push({ id: "seasons", label: "📅 Most seasons played", value: r.value, players: r.players });
+  }
+  // 15. Most consistent
+  {
+    const r = minBy("stdDev", p => p.plays >= 20);
+    if (r) records.push({
+      id: "consistent",
+      label: "🎲 Most consistent (20+ challenges)",
+      value: r.value.toFixed(2),
+      players: r.players,
+    });
+  }
+  // 16. Most unpredictable
+  {
+    const r = maxBy("stdDev", p => p.plays >= 20);
+    if (r) records.push({
+      id: "unpredictable",
+      label: "🎢 Most unpredictable (20+ challenges)",
+      value: r.value.toFixed(2),
+      players: r.players,
+    });
+  }
+
+  // ---- Affichage ----
+  const VISIBLE = 3;
+
+  let html = `<div class="section-title">🏆 ${t("allTimeRecords") || "All-time records"} <small>${records.length} records</small></div>`;
+  html += `<div class="records-grid">`;
+
+  records.forEach(rec => {
+    const isExpanded = expandedRecords.has(rec.id);
+    const visiblePlayers = isExpanded ? rec.players : rec.players.slice(0, VISIBLE);
+    const hiddenCount = rec.players.length - VISIBLE;
+
+    html += `<div class="record-card">`;
+    html += `<div class="record-label">${rec.label}</div>`;
+    html += `<div class="record-list">`;
+
+    visiblePlayers.forEach((playerName, i) => {
+      const info = getPlayerInfo(playerName);
+      html += `
+        <div class="record-item" onclick="navigateToPlayer('${esc(playerName).replace(/'/g, "\\'")}')">
+          <span class="record-item-name">
+            <span class="flag">${countryFlag(info.country)}</span>
+            ${esc(playerName)}
+            ${info.contributor ? `<span class="badge contributor">${t("contributor")}</span>` : ""}
+          </span>
+          ${i === 0 ? `<span class="record-value-inline">${rec.value}</span>` : ""}
+        </div>
+      `;
+    });
+
+    if (!isExpanded && hiddenCount > 0) {
+      html += `<div class="record-item-more" onclick="toggleRecordExpand('${rec.id}')">
+        ▸ Voir +${hiddenCount} autre${hiddenCount > 1 ? "s" : ""} (${rec.value})
+      </div>`;
+    } else if (isExpanded && hiddenCount > 0) {
+      html += `<div class="record-item-more" onclick="toggleRecordExpand('${rec.id}')">
+        ▴ Réduire
+      </div>`;
+    }
+
+    html += `</div>`;
+    html += `</div>`;
+  });
+
+  html += `</div>`;
+
   setContent(html);
+}
+
+function toggleRecordExpand(recordId) {
+  if (expandedRecords.has(recordId)) {
+    expandedRecords.delete(recordId);
+  } else {
+    expandedRecords.add(recordId);
+  }
+  renderRecords();
 }
 
 /* ============================================================
