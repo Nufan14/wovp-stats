@@ -636,9 +636,9 @@ function renderNav() {
         </div>
         <div class="nav-subitems">
           ${group.items.map(item => `
-            <button class="nav-subitem ${state.currentItem === item.id ? "active" : ""}" 
-                    onclick="event.stopPropagation(); goToItem('${item.id}');">${t(item.key)}</button>
-          `).join("")}
+  <button class="nav-subitem ${state.currentItem === item.id ? "active" : ""}" 
+          onclick="handleNavClick(event, '${item.id}');">${t(item.key)}</button>
+`).join("")}
         </div>
       </div>
     `;
@@ -657,21 +657,14 @@ function toggleMobileMenu() {
 function closeMobileMenu() {
   document.body.classList.remove("menu-open");
 }
+/* Gestionnaire de clic pour la navigation (mobile + desktop) */
+function handleNavClick(event, itemId) {
+  event.preventDefault();
+  event.stopPropagation();
+  goToItem(itemId);
+  document.body.classList.remove("menu-open");
+}
 
-/* Ferme l'overlay quand on clique en dehors de la sidebar */
-document.addEventListener("click", (e) => {
-  if (!document.body.classList.contains("menu-open")) return;
-  if (!e.target.closest(".sidebar") && !e.target.closest(".mobile-menu-toggle")) {
-    closeMobileMenu();
-  }
-});
-
-/* Ferme l'overlay quand on navigue */
-document.addEventListener("click", (e) => {
-  if (e.target.closest(".nav-subitem")) {
-    closeMobileMenu();
-  }
-});
 function goToItem(itemId) {
   state.currentItem = itemId;
   const [group, action] = itemId.split(".");
