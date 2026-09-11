@@ -1,0 +1,30 @@
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (au cas où)
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+
+# Temporary files
+*.tmp
+*.bak
+~*
+
+# Large source files (not needed on GitHub)
+source.csv
+data/_vpsdb.json
+
+# Player data backups
+data/*.bak

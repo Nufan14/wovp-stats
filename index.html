@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoVP Stats</title>
+  <meta name="description" content="Community statistics for World of Virtual Pinball — player profiles, head-to-head, table history, seasons, countries and records.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🏆</div>
+      <div class="logo-text">
+        WoVP Stats
+        <small>Statistics</small>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav" aria-label="Main navigation"></nav>
+    <div class="sidebar-footer">
+      <a href="https://virtualpinballspreadsheet.github.io" target="_blank" rel="noopener">
+        World of Virtual Pinball ↗
+      </a>
+      <div id="dbStats">Loading…</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">Loading…</div>
+      <div class="topbar-search">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="text"
+          id="globalSearch"
+          placeholder="Search a player or a table…"
+          autocomplete="off"
+          aria-label="Search a player or a table">
+        <div class="search-results" id="searchResults" role="listbox"></div>
+      </div>
+    </div>
+
+    <!-- VIEW CONTAINER -->
+    <div class="content" id="content">
+      <!-- Views are rendered here by app.js -->
+      <div class="empty">Loading data…</div>
+    </div>
+
+  </div>
+
+  <!-- APP -->
+  <script src="assets/app.js" defer></script>
+
+</body>
+</html>
