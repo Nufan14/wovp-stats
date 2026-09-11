@@ -636,7 +636,8 @@ function renderNav() {
         </div>
         <div class="nav-subitems">
           ${group.items.map(item => `
-            <button class="nav-subitem ${state.currentItem === item.id ? "active" : ""}" onclick="goToItem('${item.id}')">${t(item.key)}</button>
+            <button class="nav-subitem ${state.currentItem === item.id ? "active" : ""}" 
+                    onclick="event.stopPropagation(); goToItem('${item.id}');">${t(item.key)}</button>
           `).join("")}
         </div>
       </div>
