@@ -1,9 +1,12 @@
 /* ============================================================
    WoVP Stats — Application
-   Version 0.6 — Top scores, top positions, rivalries, fun facts
+   Version 0.5 — Standings, trajectory, seasons grid, bug fixes
    ============================================================ */
 
-const APP = { version: "0.6", dataPath: "data/" };
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const APP = { version: "0.5", dataPath: "data/" };
 
 const DATA_FILES = {
   players: "players.json",
@@ -38,15 +41,25 @@ const DIVISION_MAP = {
   "Division 5": { label: "Division 6", level: 6 },
 };
 
-function getDivisionLabel(divName) { return DIVISION_MAP[divName]?.label || divName; }
-function getDivisionLevel(divName) { return DIVISION_MAP[divName]?.level || 99; }
+function getDivisionLabel(divName) {
+  return DIVISION_MAP[divName]?.label || divName;
+}
+function getDivisionLevel(divName) {
+  return DIVISION_MAP[divName]?.level || 99;
+}
 
 const DIVISION_COLORS = {
-  ELITE: "#a78bfa", PRO: "#60a5fa", CHALLENGER: "#fbbf24",
-  OPEN: "#34d399", "Division 5": "#fb923c", "Division 6": "#f87171",
+  ELITE: "#a78bfa",
+  PRO: "#60a5fa",
+  CHALLENGER: "#fbbf24",
+  OPEN: "#34d399",
+  "Division 5": "#fb923c",
+  "Division 6": "#f87171",
 };
+
 function getDivisionColor(divName) {
-  return DIVISION_COLORS[getDivisionLabel(divName)] || "#8b93a3";
+  const label = getDivisionLabel(divName);
+  return DIVISION_COLORS[label] || "#8b93a3";
 }
 
 /* ============================================================
@@ -118,18 +131,10 @@ const I18N = {
     "challengesTab": "Challenges",
     "standingsTab": "Final standings",
     "overviewTab": "Overview",
-    "unranked": "Unranked", "champion": "Champion",
+    "unranked": "Unranked",
+    "champion": "Champion",
     "positionsAvailable": "Positions",
     "clickSeason": "Click a season to see the details",
-    "topPlayerScores": "Your best scores",
-    "topPlayerPositions": "Your best positions",
-    "rivals": "Your rivals",
-    "rivalCommunChallenges": "challenges",
-    "rivalAvgGap": "avg gap",
-    "rivalsHint": "Same division, minimum 5 common challenges",
-    "noRivals": "No rivals detected",
-    "didYouKnow": "Did you know?",
-    "funFactsTitle": "Fun facts",
   },
   fr: {
     "nav.overview": "Vue d'ensemble", "nav.players": "Joueurs", "nav.tables": "Tables",
@@ -196,18 +201,10 @@ const I18N = {
     "challengesTab": "Challenges",
     "standingsTab": "Classement final",
     "overviewTab": "Aperçu",
-    "unranked": "Non classés", "champion": "Champion",
+    "unranked": "Non classés",
+    "champion": "Champion",
     "positionsAvailable": "Positions",
     "clickSeason": "Cliquez sur une saison pour voir les détails",
-    "topPlayerScores": "Tes meilleurs scores",
-    "topPlayerPositions": "Tes meilleures positions",
-    "rivals": "Tes rivaux",
-    "rivalCommunChallenges": "challenges",
-    "rivalAvgGap": "écart moy.",
-    "rivalsHint": "Même division, minimum 5 challenges communs",
-    "noRivals": "Aucun rival détecté",
-    "didYouKnow": "Le saviez-vous ?",
-    "funFactsTitle": "Fun facts",
   },
 };
 
@@ -237,25 +234,33 @@ const COUNTRY_NAMES = {
   MK: "North Macedonia", VN: "Vietnam", RS: "Serbia", SI: "Slovenia",
   CW: "Curaçao", AX: "Åland Islands", MR: "Mauritania",
 };
+
 function countryName(cc) { return COUNTRY_NAMES[cc] || cc || "—"; }
 
 function fmtScore(n) {
   if (n === null || n === undefined || n === "") return "";
   return Number(n).toLocaleString("en-US");
 }
+
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
   );
 }
+
 function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
+
 function median(arr) {
   if (!arr.length) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
-function round(n, decimals = 1) { const f = Math.pow(10, decimals); return Math.round(n * f) / f; }
+
+function round(n, decimals = 1) {
+  const f = Math.pow(10, decimals);
+  return Math.round(n * f) / f;
+}
 
 function getInitials(tableName) {
   const words = tableName.replace(/\([^)]*\)/g, "").trim().split(/\s+/);
@@ -266,12 +271,14 @@ function getInitials(tableName) {
   if (!initials) initials = tableName.substring(0, 2);
   return initials.toUpperCase();
 }
+
 function getHashGradient(tableName) {
   let hash = 0;
   for (let i = 0; i < tableName.length; i++) hash = (hash * 31 + tableName.charCodeAt(i)) | 0;
   const hue = Math.abs(hash) % 360;
   return `linear-gradient(135deg, hsl(${hue}, 45%, 32%), hsl(${(hue + 40) % 360}, 45%, 20%))`;
 }
+
 function tablePlaceholder(tableName, size) {
   const cls = size === "lg" ? "table-thumb lg" : "table-thumb";
   const imgEntry = DB.tableImages && DB.tableImages[tableName];
@@ -283,6 +290,7 @@ function tablePlaceholder(tableName, size) {
   }
   return `<div class="${cls}" style="background:${getHashGradient(tableName)};">${esc(getInitials(tableName))}</div>`;
 }
+
 function sessionLabel(challenge) {
   if (!challenge) return "";
   if (isTournament(challenge)) return t("tournament");
@@ -298,6 +306,7 @@ function getResultsForChallenge(id) { return DB.results.filter(r => r.challengeI
 function getResultsForPlayer(name) { return DB.results.filter(r => r.playerName === name); }
 function isTournament(challenge) { return !challenge || !challenge.season; }
 
+/* Retourne les standings d'un joueur, saison par saison */
 function getPlayerStandings(name) {
   const results = [];
   for (const [seasonNum, seasonData] of Object.entries(DB.standings)) {
@@ -318,205 +327,6 @@ function getPlayerStandings(name) {
     }
   }
   return results.sort((a, b) => a.season - b.season);
-}
-
-/* Retourne la division d'un joueur pour une saison donnée */
-function getPlayerDivisionForSeason(playerName, seasonNum) {
-  const seasonData = DB.standings[seasonNum];
-  if (!seasonData) return null;
-  for (const div of seasonData.divisions || []) {
-    if ((div.standings || []).some(s => s.playerName === playerName)) {
-      return div.name;
-    }
-  }
-  return null;
-}
-
-/* ============================================================
-   RIVALRIES (intra-division)
-   ============================================================ */
-function computeRivals(playerName, minCommon = 5, topN = 5) {
-  const myResults = getResultsForPlayer(playerName);
-  if (!myResults.length) return [];
-
-  // Pour chaque challenge du joueur, on identifie sa division
-  // et on regarde qui d'autre a joué CE challenge dans CETTE division
-  const rivals = {}; // { rivalName: { gaps: [], divisions: {}, challenges: Set } }
-
-  for (const myRes of myResults) {
-    const challenge = getChallengeById(myRes.challengeId);
-    if (!challenge) continue;
-    if (isTournament(challenge)) continue; // on ne fait que les saisons
-
-    const myDivision = getPlayerDivisionForSeason(playerName, challenge.season);
-    if (!myDivision) continue;
-
-    // Tous les résultats de ce challenge
-    const allResults = getResultsForChallenge(challenge.id);
-
-    for (const otherRes of allResults) {
-      if (otherRes.playerName === playerName) continue;
-
-      // Cet autre joueur était-il dans la même division ?
-      const otherDivision = getPlayerDivisionForSeason(otherRes.playerName, challenge.season);
-      if (otherDivision !== myDivision) continue;
-
-      const key = otherRes.playerName;
-      if (!rivals[key]) rivals[key] = { gaps: [], divisions: {}, challenges: new Set() };
-      rivals[key].gaps.push(Math.abs(myRes.position - otherRes.position));
-      rivals[key].divisions[myDivision] = (rivals[key].divisions[myDivision] || 0) + 1;
-      rivals[key].challenges.add(challenge.id);
-    }
-  }
-
-  // Filtre + tri
-  const list = [];
-  for (const [name, data] of Object.entries(rivals)) {
-    if (data.challenges.size < minCommon) continue;
-    const avgGap = avg(data.gaps);
-    // Division la plus fréquente
-    let topDiv = "";
-    let topCount = 0;
-    for (const [d, c] of Object.entries(data.divisions)) {
-      if (c > topCount) { topDiv = d; topCount = c; }
-    }
-    list.push({
-      name,
-      commonChallenges: data.challenges.size,
-      avgGap,
-      topDivision: topDiv,
-    });
-  }
-
-  list.sort((a, b) => a.avgGap - b.avgGap);
-  return list.slice(0, topN);
-}
-
-/* ============================================================
-   FUN FACTS
-   ============================================================ */
-function computeFunFacts() {
-  const facts = [];
-
-  // 1. Plus grand écart entre #1 et #2 (par table)
-  const byChallenge = {};
-  DB.results.forEach(r => {
-    if (!byChallenge[r.challengeId]) byChallenge[r.challengeId] = [];
-    byChallenge[r.challengeId].push(r);
-  });
-  let maxGap = { gap: 0 };
-  for (const [cid, results] of Object.entries(byChallenge)) {
-    const sorted = [...results].sort((a, b) => b.score - a.score);
-    if (sorted.length >= 2 && sorted[0].score > 0 && sorted[1].score > 0) {
-      const gap = sorted[0].score - sorted[1].score;
-      if (gap > maxGap.gap) {
-        maxGap = { gap, challengeId: cid, player: sorted[0].playerName, table: getChallengeById(cid)?.table };
-      }
-    }
-  }
-  if (maxGap.challengeId) {
-    facts.push({
-      text: `The biggest score gap between #1 and #2 was on <strong>${esc(maxGap.table)}</strong>: <strong>${fmtScore(maxGap.gap)}</strong> points by <strong>${esc(maxGap.player)}</strong>.`,
-      textFr: `Le plus grand écart de score entre #1 et #2 était sur <strong>${esc(maxGap.table)}</strong> : <strong>${fmtScore(maxGap.gap)}</strong> points par <strong>${esc(maxGap.player)}</strong>.`,
-    });
-  }
-
-  // 2. Joueur le plus titré (champion de division)
-  const titleCount = {};
-  for (const [season, data] of Object.entries(DB.standings)) {
-    for (const div of data.divisions || []) {
-      const champion = (div.standings || []).find(s => s.position === 1 && !s.unranked);
-      if (champion) {
-        titleCount[champion.playerName] = (titleCount[champion.playerName] || 0) + 1;
-      }
-    }
-  }
-  const topTitle = Object.entries(titleCount).sort((a, b) => b[1] - a[1])[0];
-  if (topTitle && topTitle[1] >= 2) {
-    facts.push({
-      text: `<strong>${esc(topTitle[0])}</strong> has won <strong>${topTitle[1]}</strong> division championships — the most in WoVP history.`,
-      textFr: `<strong>${esc(topTitle[0])}</strong> a remporté <strong>${topTitle[1]}</strong> titres de division — le plus de l'histoire de WoVP.`,
-    });
-  }
-
-  // 3. Plus grand nombre de participants sur un challenge
-  let maxParticipants = { count: 0 };
-  DB.challenges.forEach(c => {
-    const n = c.resultCount || getResultsForChallenge(c.id).length;
-    if (n > maxParticipants.count) maxParticipants = { count: n, table: c.table, season: c.season, week: c.week };
-  });
-  if (maxParticipants.count > 0) {
-    facts.push({
-      text: `The most popular challenge was <strong>${esc(maxParticipants.table)}</strong> (Season ${maxParticipants.season}, Week ${maxParticipants.week}) with <strong>${maxParticipants.count}</strong> participants.`,
-      textFr: `Le challenge le plus populaire était <strong>${esc(maxParticipants.table)}</strong> (Saison ${maxParticipants.season}, Semaine ${maxParticipants.week}) avec <strong>${maxParticipants.count}</strong> participants.`,
-    });
-  }
-
-  // 4. Joueur avec le plus de podiums sans victoire
-  const podiumsNoWin = {};
-  DB.results.forEach(r => {
-    if (r.position === 2 || r.position === 3) {
-      podiumsNoWin[r.playerName] = (podiumsNoWin[r.playerName] || 0) + 1;
-    }
-  });
-  const winsByPlayer = {};
-  DB.results.forEach(r => { if (r.position === 1) winsByPlayer[r.playerName] = true; });
-  const eternalSecond = Object.entries(podiumsNoWin)
-    .filter(([n]) => !winsByPlayer[n])
-    .sort((a, b) => b[1] - a[1])[0];
-  if (eternalSecond && eternalSecond[1] >= 3) {
-    facts.push({
-      text: `<strong>${esc(eternalSecond[0])}</strong> has <strong>${eternalSecond[1]}</strong> podium finishes without a single win. So close!`,
-      textFr: `<strong>${esc(eternalSecond[0])}</strong> a <strong>${eternalSecond[1]}</strong> podiums sans aucune victoire. Si proche !`,
-    });
-  }
-
-  // 5. Table la plus jouée
-  const tablePlays = {};
-  DB.challenges.forEach(c => {
-    if (!tablePlays[c.table]) tablePlays[c.table] = 0;
-    tablePlays[c.table] += (c.resultCount || 0);
-  });
-  const topTable = Object.entries(tablePlays).sort((a, b) => b[1] - a[1])[0];
-  if (topTable) {
-    facts.push({
-      text: `The most played table is <strong>${esc(topTable[0])}</strong> with <strong>${fmtScore(topTable[1])}</strong> total entries.`,
-      textFr: `La table la plus jouée est <strong>${esc(topTable[0])}</strong> avec <strong>${fmtScore(topTable[1])}</strong> entrées au total.`,
-    });
-  }
-
-  // 6. Pays champion
-  const countryWins = {};
-  DB.results.forEach(r => {
-    if (r.position === 1) {
-      const cc = getPlayerInfo(r.playerName).country;
-      if (cc) countryWins[cc] = (countryWins[cc] || 0) + 1;
-    }
-  });
-  const topCountry = Object.entries(countryWins).sort((a, b) => b[1] - a[1])[0];
-  if (topCountry) {
-    facts.push({
-      text: `<strong>${countryFlag(topCountry[0])} ${esc(countryName(topCountry[0]))}</strong> leads with <strong>${topCountry[1]}</strong> challenge wins.`,
-      textFr: `<strong>${countryFlag(topCountry[0])} ${esc(countryName(topCountry[0]))}</strong> mène avec <strong>${topCountry[1]}</strong> victoires de challenge.`,
-    });
-  }
-
-  // 7. Plus longue série de victoires
-  const winsByPlayerSorted = {};
-  DB.results.forEach(r => {
-    if (r.position === 1) {
-      if (!winsByPlayerSorted[r.playerName]) winsByPlayerSorted[r.playerName] = [];
-      winsByPlayerSorted[r.playerName].push(r.challengeId);
-    }
-  });
-
-  return facts;
-}
-
-function getRandomFunFact() {
-  if (!window.__funFacts) window.__funFacts = computeFunFacts();
-  if (!window.__funFacts.length) return null;
-  return window.__funFacts[Math.floor(Math.random() * window.__funFacts.length)];
 }
 
 /* ============================================================
@@ -554,27 +364,32 @@ const state = {
   playerName: null,
   countryCc: null,
   seasonNumber: null,
-  seasonTab: "challenges",
+  seasonTab: "challenges",   // challenges | standings
   metric: "participants",
   tablesSort: "occurrences",
   tablesFilter: "all",
   playersSort: "wins",
   playersCountryFilter: "all",
+  // Table detail
   tableLeaderboardSort: "avg",
   tableLeaderboardShowAll: false,
   tableTopScoresShowAll: false,
   tableOccurrencesShowAll: false,
+  // Player detail
   playerTablesSort: "avg",
   playerTablesShowAll: false,
   playerResultsSort: "dateDesc",
   playerResultsShowAll: false,
-  playerTopScoresShowAll: false,
-  playerTopPositionsShowAll: false,
+  // Country
   countrySort: "wins",
   countryShowAll: false,
+  // Season standings
   standingsDivision: null,
   standingsShowUnranked: false,
-  h2hP1: null, h2hP2: null, h2hShowAll: false,
+  // H2H
+  h2hP1: null,
+  h2hP2: null,
+  h2hShowAll: false,
 };
 
 function loadPrefs() {
@@ -648,29 +463,7 @@ function toggleGroup(id) {
   if (openGroups.has(id)) openGroups.delete(id); else openGroups.add(id);
   renderNav();
 }
-/* Mobile menu (overlay) */
-function toggleMobileMenu() {
-  document.body.classList.toggle("menu-open");
-}
 
-function closeMobileMenu() {
-  document.body.classList.remove("menu-open");
-}
-
-/* Ferme l'overlay quand on clique en dehors de la sidebar */
-document.addEventListener("click", (e) => {
-  if (!document.body.classList.contains("menu-open")) return;
-  if (!e.target.closest(".sidebar") && !e.target.closest(".mobile-menu-toggle")) {
-    closeMobileMenu();
-  }
-});
-
-/* Ferme l'overlay quand on navigue */
-document.addEventListener("click", (e) => {
-  if (e.target.closest(".nav-subitem")) {
-    closeMobileMenu();
-  }
-});
 function goToItem(itemId) {
   state.currentItem = itemId;
   const [group, action] = itemId.split(".");
@@ -693,7 +486,6 @@ function navigateToTable(tableName) {
 function navigateToPlayer(name) {
   state.currentView = "players"; state.playerName = name; state.currentItem = "players.all";
   state.playerTablesShowAll = false; state.playerResultsShowAll = false;
-  state.playerTopScoresShowAll = false; state.playerTopPositionsShowAll = false;
   renderNav(); showPlayer(name);
 }
 function navigateToCountry(cc) {
@@ -730,7 +522,10 @@ function setLang(l) {
   else if (state.currentView === "h2h") renderH2H();
 }
 
-function setPageTitle(key) { const el = document.getElementById("pageTitle"); if (el) el.textContent = t(key); }
+function setPageTitle(key) {
+  const el = document.getElementById("pageTitle");
+  if (el) el.textContent = t(key);
+}
 function updateDbStats() {
   const el = document.getElementById("dbStats");
   if (!el) return;
@@ -739,7 +534,10 @@ function updateDbStats() {
   const results = DB.results.length;
   el.textContent = `${players} ${t(players > 1 ? "playersCount" : "playerCount")} · ${challenges} ${t(challenges > 1 ? "challengesCount" : "challenge")} · ${results} ${t("resultsCount")}`;
 }
-function setContent(html) { const el = document.getElementById("content"); if (el) el.innerHTML = html; }
+function setContent(html) {
+  const el = document.getElementById("content");
+  if (el) el.innerHTML = html;
+}
 
 function renderShowAllToggle(currentCount, totalCount, stateKey, callbackName) {
   if (totalCount <= currentCount) return "";
@@ -765,9 +563,12 @@ function svgLineChart(data, opts) {
   const yMin = Math.max(0, minV - padRange), yMax = maxV + padRange;
   const xStep = data.length > 1 ? innerW / (data.length - 1) : 0;
   const xScale = i => pad.left + i * xStep;
+
+  // Si opts.invertY = true : petites valeurs en haut (utile pour les positions)
   const yScale = opts.invertY
     ? v => pad.top + ((v - yMin) / (yMax - yMin)) * innerH
     : v => pad.top + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
+
   let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
   for (let i = 0; i <= 4; i++) {
     const v = yMin + (yMax - yMin) * i / 4;
@@ -870,6 +671,7 @@ function toggleCombobox(id) {
     if (search) { search.value = ""; filterCombobox(id, ""); setTimeout(() => search.focus(), 20); }
   }
 }
+
 function filterCombobox(id, query) {
   const cb = document.getElementById(id);
   if (!cb) return;
@@ -883,6 +685,7 @@ function filterCombobox(id, query) {
   const firstVisible = [...items].find(el => el.style.display !== "none");
   if (firstVisible) firstVisible.classList.add("highlighted");
 }
+
 function selectComboboxItem(id, value) {
   const data = comboboxData[id];
   if (!data) return;
@@ -893,6 +696,7 @@ function selectComboboxItem(id, value) {
   if (typeof fn === "function") fn(value);
   else console.warn("[WoVP Stats] onSelect introuvable pour", id, data.onSelect);
 }
+
 function handleComboboxKey(event, id) {
   if (event.key === "Escape") { document.getElementById(id)?.classList.remove("open"); return; }
   if (event.key === "Enter") {
@@ -911,11 +715,13 @@ function handleComboboxKey(event, id) {
     items[next].scrollIntoView({ block: "nearest" });
   }
 }
+
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".combobox")) {
     document.querySelectorAll(".combobox.open").forEach(el => el.classList.remove("open"));
   }
 });
+
 function updateComboboxLabel(id, value) {
   const cb = document.getElementById(id);
   if (!cb) return;
@@ -930,7 +736,7 @@ function updateComboboxLabel(id, value) {
 }
 
 /* ============================================================
-   VIEW: OVERVIEW (avec fun fact)
+   VIEW: OVERVIEW
    ============================================================ */
 function renderOverview() {
   setPageTitle("page.overview");
@@ -959,16 +765,6 @@ function renderOverview() {
       <div class="stat-box"><div class="stat-value">${DB.results.length}</div><div class="stat-label">${t("resultsCount")}</div></div>
     </div>
   `;
-
-  // Fun fact
-  const fact = getRandomFunFact();
-  if (fact) {
-    const text = LANG === "fr" ? fact.textFr : fact.text;
-    html += `<div class="fun-fact-card">
-      <div class="fun-fact-label">💡 ${t("didYouKnow")}</div>
-      <div class="fun-fact-text">${text}</div>
-    </div>`;
-  }
 
   html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">`;
   html += `<div class="card"><div class="card-title"><strong>🏆 ${t("wins")}</strong></div>`;
@@ -1379,7 +1175,7 @@ function changeTableMetric(metric) { saveMetric(metric); if (state.tableName) sh
    ↓↓↓ BLOC 2 À COLLER ICI ↓↓↓
    ============================================================ */
 /* ============================================================
-   VIEW: TABLES → CHALLENGES BY SEASON
+   VIEW: TABLES → CHALLENGES BY SEASON (liste des saisons)
    ============================================================ */
 function renderSeasonsListForTables() {
   setPageTitle("page.tablesBySeason");
@@ -1417,6 +1213,9 @@ function renderSeasonsListForTables() {
   setContent(html);
 }
 
+/* ============================================================
+   VIEW: SEASON DETAIL (challenges par semaine)
+   ============================================================ */
 function renderSeasonDetailForTables(seasonNum) {
   setPageTitle("page.tablesBySeason");
   state.currentView = "tablesBySeason";
@@ -1461,7 +1260,7 @@ function renderSeasonDetailForTables(seasonNum) {
 }
 
 /* ============================================================
-   VIEW: SEASONS GRID (standings)
+   VIEW: SEASONS GRID (standings - vue principale)
    ============================================================ */
 function renderSeasonsGrid() {
   setPageTitle("page.seasons");
@@ -1483,6 +1282,7 @@ function renderSeasonsGrid() {
     const divisions = data.divisions || [];
     const totalPlayers = divisions.reduce((sum, d) => sum + (d.standings || []).length, 0);
 
+    // Cherche le champion de la division du plus haut niveau
     let champion = null;
     if (divisions.length) {
       const topDiv = [...divisions].sort((a, b) => getDivisionLevel(a.name) - getDivisionLevel(b.name))[0];
@@ -1517,16 +1317,24 @@ function renderSeasonsGrid() {
   setContent(html);
 }
 
+/* ============================================================
+   VIEW: SEASON STANDINGS DETAIL
+   ============================================================ */
 function renderSeasonStandingsDetail(seasonNum) {
   setPageTitle("page.season");
   state.currentView = "seasons";
   state.seasonNumber = seasonNum;
 
   const data = DB.standings[seasonNum];
-  if (!data) { setContent(`<p class="empty">${t("noData")}</p>`); return; }
+  if (!data) {
+    setContent(`<p class="empty">${t("noData")}</p>`);
+    return;
+  }
 
   const divisions = data.divisions || [];
-  if (!state.standingsDivision && divisions.length) state.standingsDivision = divisions[0].name;
+  if (!state.standingsDivision && divisions.length) {
+    state.standingsDivision = divisions[0].name;
+  }
 
   const currentDiv = divisions.find(d => d.name === state.standingsDivision) || divisions[0];
 
@@ -1543,6 +1351,7 @@ function renderSeasonStandingsDetail(seasonNum) {
     </div>
   `;
 
+  // Onglets divisions
   html += `<div class="division-tabs">`;
   divisions.forEach(d => {
     const isActive = d.name === state.standingsDivision;
@@ -1555,6 +1364,7 @@ function renderSeasonStandingsDetail(seasonNum) {
   });
   html += `</div>`;
 
+  // Classement de la division courante
   if (currentDiv) {
     const standings = currentDiv.standings || [];
     const ranked = standings.filter(s => !s.unranked);
@@ -1582,8 +1392,10 @@ function renderSeasonStandingsDetail(seasonNum) {
       </tr>`;
     });
 
-    html += `</tbody></table></div>`;
+    html += `</tbody></table>`;
+    html += `</div>`;
 
+    // Unranked
     if (unranked.length) {
       const label = state.standingsShowUnranked ? `▲ ${t("hideUnranked")}` : `▼ ${t("showUnranked")} (${unranked.length})`;
       html += `<div class="show-all-toggle" onclick="toggleStandingsUnranked()">${label}</div>`;
@@ -1617,6 +1429,7 @@ function setStandingsDivision(divName) {
   state.standingsShowUnranked = false;
   if (state.seasonNumber) renderSeasonStandingsDetail(state.seasonNumber);
 }
+
 function toggleStandingsUnranked() {
   state.standingsShowUnranked = !state.standingsShowUnranked;
   if (state.seasonNumber) renderSeasonStandingsDetail(state.seasonNumber);
@@ -1734,7 +1547,7 @@ function changePlayersSort(s) { savePlayersSort(s); renderPlayersList(); }
 function changePlayersCountry(c) { state.playersCountryFilter = c; renderPlayersList(); }
 
 /* ============================================================
-   VIEW: PLAYER DETAIL (avec top scores, top positions, rivals)
+   VIEW: PLAYER DETAIL (avec career trajectory)
    ============================================================ */
 function showPlayer(name) {
   setPageTitle("page.player");
@@ -1812,8 +1625,8 @@ function showPlayer(name) {
   const specialty = tablesListBase.length ? [...tablesListBase].sort((a, b) => a.avg - b.avg)[0] : null;
   const nemesis = tablesListBase.length ? [...tablesListBase].sort((a, b) => b.avg - a.avg)[0] : null;
 
+  // Career trajectory
   const playerStandings = getPlayerStandings(name);
-  const rivals = computeRivals(name, 5, 5);
 
   let html = `
     <button class="btn" onclick="goToItem('players.all')" style="margin-bottom:18px;">← ${t("nav.players.all")}</button>
@@ -1843,20 +1656,24 @@ function showPlayer(name) {
     </div>
   `;
 
-  // Career trajectory
+  // Career trajectory (nouveau)
   if (playerStandings.length > 0) {
     html += `<div class="section-title">${t("careerTrajectory")}</div>`;
+
+    // Graph
     const chartData = playerStandings.map(s => ({
       label: "S" + s.season,
       value: s.position,
       color: getDivisionColor(s.division),
     }));
+    const maxPos = Math.max(...playerStandings.map(s => s.position), 10);
 
     html += `<div class="chart-container">
       <div class="chart-header">
         <span class="title">${t("careerChart")}</span>
       </div>
       <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; font-size:11px;">`;
+    // Légende
     const usedDivisions = [...new Set(playerStandings.map(s => getDivisionLabel(s.division)))];
     usedDivisions.forEach(label => {
       html += `<span style="display:flex; align-items:center; gap:6px;">
@@ -1874,6 +1691,7 @@ function showPlayer(name) {
     });
     html += `</div>`;
 
+    // Tableau
     html += `<div class="card" style="padding:8px 20px;">
       <table>
         <thead><tr>
@@ -1899,98 +1717,7 @@ function showPlayer(name) {
     html += `</tbody></table></div>`;
   }
 
-  // Top scores
-  const topScores = [...results]
-    .filter(r => r.score > 0)
-    .sort((a, b) => b.score - a.score);
-  if (topScores.length) {
-    const topScoresLimit = 10;
-    const topScoresToShow = state.playerTopScoresShowAll ? topScores : topScores.slice(0, topScoresLimit);
-
-    html += `<div class="section-title">🏅 ${t("topPlayerScores")} <small>${topScores.length} ${t("resultsCount")}</small></div>`;
-    html += `<div class="card" style="padding:6px 20px;">`;
-    topScoresToShow.forEach((r, i) => {
-      const c = getChallengeById(r.challengeId);
-      const rankClass = i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : "";
-      html += `<div class="result-row">
-        <div class="rank ${rankClass}">${i + 1}</div>
-        <div class="player-name clickable" onclick="navigateToTable('${esc(c.table).replace(/'/g, "\\'")}')" style="flex:2;">
-          ${esc(c.table)}
-          ${isTournament(c) ? `<span class="badge tournament">${t("tournament")}</span>` : ""}
-        </div>
-        <div class="muted" style="font-size:11.5px; white-space:nowrap;">
-          ${isTournament(c) ? esc(c.date || "") : `S${c.season} · W${c.week}`}
-        </div>
-        <div class="score-value">${fmtScore(r.score)}</div>
-      </div>`;
-    });
-    html += `</div>`;
-    html += renderShowAllToggle(topScoresLimit, topScores.length, "playerTopScoresShowAll", "togglePlayerTopScores");
-  }
-
-  // Top positions
-  const topPositions = [...results]
-    .filter(r => r.position >= 1)
-    .sort((a, b) => a.position - b.position || b.score - a.score);
-  if (topPositions.length) {
-    const topPositionsLimit = 10;
-    const topPositionsToShow = state.playerTopPositionsShowAll ? topPositions : topPositions.slice(0, topPositionsLimit);
-
-    html += `<div class="section-title">🎯 ${t("topPlayerPositions")} <small>${topPositions.length} ${t("resultsCount")}</small></div>`;
-    html += `<div class="card" style="padding:6px 20px;">`;
-    topPositionsToShow.forEach((r, i) => {
-      const c = getChallengeById(r.challengeId);
-      const rankClass = r.position === 1 ? "gold" : r.position === 2 ? "silver" : r.position === 3 ? "bronze" : "";
-      html += `<div class="result-row">
-        <div class="rank ${rankClass}">#${r.position}</div>
-        <div class="player-name clickable" onclick="navigateToTable('${esc(c.table).replace(/'/g, "\\'")}')" style="flex:2;">
-          ${esc(c.table)}
-          ${isTournament(c) ? `<span class="badge tournament">${t("tournament")}</span>` : ""}
-        </div>
-        <div class="muted" style="font-size:11.5px; white-space:nowrap;">
-          ${isTournament(c) ? esc(c.date || "") : `S${c.season} · W${c.week}`}
-        </div>
-        <div class="score-value">${fmtScore(r.score)}</div>
-      </div>`;
-    });
-    html += `</div>`;
-    html += renderShowAllToggle(topPositionsLimit, topPositions.length, "playerTopPositionsShowAll", "togglePlayerTopPositions");
-  }
-
-  // Rivals
-  if (rivals.length) {
-    html += `<div class="section-title">⚔️ ${t("rivals")} <small>${t("rivalsHint")}</small></div>`;
-    html += `<div class="card" style="padding:8px 20px;"><table>
-      <thead><tr>
-        <th style="width:40px;"></th>
-        <th>${t("playerName")}</th>
-        <th>${t("division")}</th>
-        <th class="num">${t("rivalCommunChallenges")}</th>
-        <th class="num">${t("rivalAvgGap")}</th>
-      </tr></thead><tbody>`;
-    rivals.forEach((r, i) => {
-      const rInfo = getPlayerInfo(r.name);
-      const divColor = getDivisionColor(r.topDivision);
-      html += `<tr>
-        <td><span class="rank">${i + 1}</span></td>
-        <td>
-          <span class="flag">${countryFlag(rInfo.country)}</span>
-          <span class="player-name" onclick="navigateToPlayer('${esc(r.name).replace(/'/g, "\\'")}')">${esc(r.name)}</span>
-          ${rInfo.contributor ? `<span class="badge contributor">${t("contributor")}</span>` : ""}
-        </td>
-        <td>
-          <span class="badge" style="background:${divColor}22; color:${divColor}; border:1px solid ${divColor}44;">
-            ${esc(getDivisionLabel(r.topDivision))}
-          </span>
-        </td>
-        <td class="num">${r.commonChallenges}</td>
-        <td class="num" style="color:var(--accent); font-weight:700;">${r.avgGap.toFixed(1)}</td>
-      </tr>`;
-    });
-    html += `</tbody></table></div>`;
-  }
-
-  // Season history
+  // Season history (challenges)
   if (seasons.length) {
     html += `<div class="section-title">${t("seasonHistory")}</div>`;
     html += `<div class="card" style="padding:8px 20px;"><table>
@@ -2131,8 +1858,6 @@ function showPlayer(name) {
 
 function togglePlayerTables() { state.playerTablesShowAll = !state.playerTablesShowAll; if (state.playerName) showPlayer(state.playerName); }
 function togglePlayerResults() { state.playerResultsShowAll = !state.playerResultsShowAll; if (state.playerName) showPlayer(state.playerName); }
-function togglePlayerTopScores() { state.playerTopScoresShowAll = !state.playerTopScoresShowAll; if (state.playerName) showPlayer(state.playerName); }
-function togglePlayerTopPositions() { state.playerTopPositionsShowAll = !state.playerTopPositionsShowAll; if (state.playerName) showPlayer(state.playerName); }
 function changePlayerTablesSort(s) { state.playerTablesSort = s; if (state.playerName) showPlayer(state.playerName); }
 function changePlayerResultsSort(s) { state.playerResultsSort = s; if (state.playerName) showPlayer(state.playerName); }
 
