@@ -1,4 +1,4 @@
-﻿[
+[
   {
     "id": "57d1b771-7402-4ff0-831e-20b74f96f050",
     "table": "The Machine - Bride of Pin-bot (Williams 1991)",
@@ -3298,5 +3298,27 @@
     "season": 9,
     "week": 12,
     "resultCount": 55
+  },
+  {
+    "id": "the-champion-s17w6",
+    "table": "The Champion Pub (Bally 1998)",
+    "date": "2026-09-13",
+    "resultCount": 106,
+    "season": 17,
+    "week": 6
+  },
+  {
+    "id": "dolly-parton-t",
+    "table": "Dolly Parton (Bally 1979)",
+    "date": "2026-09-13",
+    "resultCount": 31
+  },
+  {
+    "id": "earthshaker-s17w5",
+    "table": "Earthshaker (Williams 1989)",
+    "date": "2026-09-13",
+    "resultCount": 101,
+    "season": 17,
+    "week": 5
   }
 ]
