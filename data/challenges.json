@@ -3332,5 +3332,19 @@
     "table": "Playboy 35th Anniversary (Data East 1989)",
     "date": "2026-09-20",
     "resultCount": 29
+  },
+  {
+    "id": "family-guy-t",
+    "table": "Family Guy (Stern 2007)",
+    "date": "2026-09-27",
+    "resultCount": 27
+  },
+  {
+    "id": "shooting-the-s17w7",
+    "table": "Shooting The Rapids Deluxe (Original 2026)",
+    "date": "2026-09-27",
+    "resultCount": 92,
+    "season": 17,
+    "week": 7
   }
 ]
