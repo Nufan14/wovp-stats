@@ -3346,5 +3346,11 @@
     "resultCount": 92,
     "season": 17,
     "week": 7
+  },
+  {
+    "id": "tales-of-t",
+    "table": "Tales of the Arabian Nights (Williams 1996)",
+    "date": "2026-09-30",
+    "resultCount": 81
   }
 ]
