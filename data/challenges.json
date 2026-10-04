@@ -3352,5 +3352,27 @@
     "table": "Tales of the Arabian Nights (Williams 1996)",
     "date": "2026-09-30",
     "resultCount": 81
+  },
+  {
+    "id": "judge-dredd-s17w8",
+    "table": "Judge Dredd (Bally 1993)",
+    "date": "2026-10-04",
+    "resultCount": 117,
+    "season": 17,
+    "week": 8
+  },
+  {
+    "id": "jurassic-park-t",
+    "table": "Jurassic Park (Data East 1993)",
+    "date": "2026-10-04",
+    "resultCount": 69
+  },
+  {
+    "id": "diner-s17w7",
+    "table": "Diner (Williams 1990)",
+    "date": "2026-10-04",
+    "resultCount": 112,
+    "season": 17,
+    "week": 7
   }
 ]

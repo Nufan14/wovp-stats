@@ -2294,5 +2294,25 @@
   "george peckham": {
     "country": "US",
     "contributor": false
+  },
+  "Christopher Mee": {
+    "country": "US",
+    "contributor": false
+  },
+  "Dan Fowler": {
+    "country": "CA",
+    "contributor": false
+  },
+  "David Brown": {
+    "country": "US",
+    "contributor": false
+  },
+  "James Miller": {
+    "country": "US",
+    "contributor": false
+  },
+  "Ollivier Francq": {
+    "country": "BE",
+    "contributor": false
   }
 }
