@@ -3374,5 +3374,19 @@
     "resultCount": 112,
     "season": 17,
     "week": 7
+  },
+  {
+    "id": "millionaire-t",
+    "table": "Millionaire (Williams 1987)",
+    "date": "2026-10-11",
+    "resultCount": 54
+  },
+  {
+    "id": "black-rose-s17w9",
+    "table": "Black Rose (Bally 1992)",
+    "date": "2026-10-11",
+    "resultCount": 112,
+    "season": 17,
+    "week": 9
   }
 ]
