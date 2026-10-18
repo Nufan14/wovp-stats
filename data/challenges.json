@@ -3388,5 +3388,27 @@
     "resultCount": 112,
     "season": 17,
     "week": 9
+  },
+  {
+    "id": "the-avengers-s17w10",
+    "table": "The Avengers (Pro) (Stern 2012)",
+    "date": "2026-10-18",
+    "resultCount": 110,
+    "season": 17,
+    "week": 10
+  },
+  {
+    "id": "class-of-t",
+    "table": "Class of 1812 (Gottlieb 1991)",
+    "date": "2026-10-18",
+    "resultCount": 56
+  },
+  {
+    "id": "the-getaway-s17w9",
+    "table": "The Getaway - High Speed II (Williams 1992)",
+    "date": "2026-10-18",
+    "resultCount": 106,
+    "season": 17,
+    "week": 9
   }
 ]
