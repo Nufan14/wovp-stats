@@ -3410,5 +3410,19 @@
     "resultCount": 106,
     "season": 17,
     "week": 9
+  },
+  {
+    "id": "indiana-jones-s17w11",
+    "table": "Indiana Jones - The Pinball Adventure (Williams 1993)",
+    "date": "2026-10-25",
+    "resultCount": 122,
+    "season": 17,
+    "week": 11
+  },
+  {
+    "id": "super-mario-t",
+    "table": "Super Mario Bros. (Gottlieb 1992)",
+    "date": "2026-10-25",
+    "resultCount": 45
   }
 ]
