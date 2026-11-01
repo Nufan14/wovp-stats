@@ -3424,5 +3424,27 @@
     "table": "Super Mario Bros. (Gottlieb 1992)",
     "date": "2026-10-25",
     "resultCount": 45
+  },
+  {
+    "id": "the-walking-t",
+    "table": "The Walking Dead (Limited Edition) (Stern 2014)",
+    "date": "2026-11-01",
+    "resultCount": 43
+  },
+  {
+    "id": "the-addams-s17w12",
+    "table": "The Addams Family (Bally 1992)",
+    "date": "2026-11-01",
+    "resultCount": 114,
+    "season": 17,
+    "week": 12
+  },
+  {
+    "id": "phantom-of-s17w11",
+    "table": "Phantom of the Opera (Data East 1990)",
+    "date": "2026-11-01",
+    "resultCount": 99,
+    "season": 17,
+    "week": 11
   }
 ]
