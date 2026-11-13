@@ -3446,5 +3446,19 @@
     "resultCount": 99,
     "season": 17,
     "week": 11
+  },
+  {
+    "id": "quicksilver-t",
+    "table": "Quicksilver (Stern 1980)",
+    "date": "2026-11-08",
+    "resultCount": 32
+  },
+  {
+    "id": "world-poker-s18w1",
+    "table": "World Poker Tour (Stern 2006)",
+    "date": "2026-11-08",
+    "resultCount": 119,
+    "season": 18,
+    "week": 1
   }
 ]
