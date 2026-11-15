@@ -3460,5 +3460,27 @@
     "resultCount": 119,
     "season": 18,
     "week": 1
+  },
+  {
+    "id": "black-knight-t",
+    "table": "Black Knight 2000 (Williams 1989)",
+    "date": "2026-11-15",
+    "resultCount": 26
+  },
+  {
+    "id": "whirlwind-s18w2",
+    "table": "Whirlwind (Williams 1990)",
+    "date": "2026-11-15",
+    "resultCount": 123,
+    "season": 18,
+    "week": 2
+  },
+  {
+    "id": "bad-cats-s18w1",
+    "table": "Bad Cats (Williams 1989)",
+    "date": "2026-11-15",
+    "resultCount": 114,
+    "season": 18,
+    "week": 1
   }
 ]
